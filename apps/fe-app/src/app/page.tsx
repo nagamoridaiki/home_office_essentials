@@ -1,19 +1,11 @@
-import type { Metadata } from "next";
+"use client";
 
-const TODOS = [
-  "デスクの配線を整理する",
-  "モニターアームの高さを調整する",
-  "キーボード用リストレストを買う",
-  "作業ログを30分おきに取る",
-  "夕方の換気を10分する",
-] as const;
-
-export const metadata: Metadata = {
-  title: "やること",
-  description: "ホームオフィス向けのTODO一覧（表示のみ）",
-};
+import Link from "next/link";
+import { useTodos } from "@/contexts/todo-context";
 
 export default function Home() {
+  const { todos } = useTodos();
+
   return (
     <div className="flex min-h-svh items-center justify-center px-6 py-12">
       <main className="flex w-full max-w-[420px] flex-col gap-6">
@@ -22,11 +14,11 @@ export default function Home() {
         </h1>
         <ul
           className="overflow-hidden rounded-xl border border-black/[0.08] bg-black/[0.05] dark:border-white/[0.145] dark:bg-white/[0.06]"
-          aria-label="TODO一覧（表示のみ、操作不可）"
+          aria-label="TODO一覧"
         >
-          {TODOS.map((text) => (
+          {todos.map((text, i) => (
             <li
-              key={text}
+              key={`${text}-${i}`}
               className="flex items-start gap-3 border-b border-black/[0.08] px-4 py-3.5 text-[15px] leading-snug text-foreground last:border-b-0 dark:border-white/[0.145]"
             >
               <span
@@ -37,6 +29,12 @@ export default function Home() {
             </li>
           ))}
         </ul>
+        <Link
+          href="/new"
+          className="flex items-center justify-center rounded-xl border border-black/[0.08] bg-foreground px-4 py-3 text-[15px] font-medium text-background transition-colors hover:bg-foreground/90 dark:border-white/[0.145]"
+        >
+          タスクを追加
+        </Link>
       </main>
     </div>
   );

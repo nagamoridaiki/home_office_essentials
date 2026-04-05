@@ -15,11 +15,51 @@ pnpm dev
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+ブラウザで [http://localhost:3000](http://localhost:3000) を開いて確認できます。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+編集の起点は `src/app/page.tsx` などです。保存するとホットリロードされます。
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## ディレクトリ構成（フロントエンド）
+
+App Router のエントリとアプリコードは **`src/`** 以下にまとめています。インポートエイリアスは `src/*`**（`tsconfig.json` の `paths`）です。
+
+```
+apps/fe-app/
+├── src/
+│   ├── app/                 # App Router（ルート・レイアウト・グローバル CSS）
+│   │   ├── layout.tsx       # ルートレイアウト（フォント・Provider など）
+│   │   ├── page.tsx         # `/`
+│   │   ├── globals.css
+│   │   └── new/
+│   │       └── page.tsx     # `/new`
+│   ├── components/          # 複数ルートで使う UI（必要に応じて ui/ や features/ などに分割）
+│   ├── contexts/            # React Context・Provider（テストや Story からも @/contexts/... で参照）
+│   ├── hooks/               # カスタムフック（状態・副作用。Context の実装と分離しやすい）
+│   ├── constants/           # マジックナンバー・初期データ・文言などの定数
+│   ├── types/               # 共有の型定義
+│   └── lib/                 # Next / React に依存しない純粋な処理（ユーティリティ・ドメインロジックなど）
+├── next.config.ts
+├── postcss.config.mjs
+├── tsconfig.json
+└── package.json
+```
+
+ルートに **`public/`** を置くと、その中身が URL `/` からそのまま配信されます（画像・`favicon.ico` など）。まだ無い場合は必要になったら作成すれば問題ありません。
+
+### 置き場所の目安
+
+| 置くもの | 置き先の例 |
+|----------|------------|
+| ページ・レイアウト・ルートグループ | `src/app/` |
+| 特定レイアウト専用の小さな UI | `src/app/` 配下の `_components` など（URL に含めたくない場合は `_` プレフィックス） |
+| 複数画面で使うコンポーネント | `src/components/`（大きくなったら `features/<機能名>/` など） |
+| グローバルな Context / Provider | `src/contexts/` |
+| フックに切り出した状態・API 呼び出し | `src/hooks/` |
+| 環境に依存しない定数 | `src/constants/` |
+| 共有型 | `src/types/` |
+| フォーマット・バリデーションなど純関数 | `src/lib/`（必要なら `src/utils/` を別けてもよい） |
 
 ## Learn More
 
