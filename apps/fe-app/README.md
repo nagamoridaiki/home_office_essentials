@@ -1,77 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# fe-app
 
-## Getting Started
+モノレポ内の **Next.js**（App Router）フロントエンドです。ルートの説明は [リポジトリ README](../../README.md) を参照してください。
 
-このアプリはリポジトリルートの pnpm + Turbo モノレポの一部です。開発サーバーはルートで次のように起動します。
+## 起動方法
+
+**推奨（フロント＋API 同時）** — リポジトリルートで:
 
 ```bash
-cd ../..
+pnpm install
 pnpm dev
 ```
 
-`apps/fe-app` 直下だけで動かす場合:
+**このパッケージだけ**（ポート 3000）:
 
 ```bash
+# ルートから
+pnpm --filter fe-app dev
+
+# または apps/fe-app で
 pnpm dev
 ```
 
-ブラウザで [http://localhost:3000](http://localhost:3000) を開いて確認できます。
+ブラウザ: http://localhost:3000
 
-編集の起点は `src/app/page.tsx` などです。保存するとホットリロードされます。
+バックエンドは別ターミナルで `pnpm be:dev`（ルート）または `pnpm dev`（`apps/be-app`）を実行し、http://localhost:8000 を利用します。
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## バックエンドとの連携
 
-## ディレクトリ構成（フロントエンド）
+- API のベース URL は環境変数で渡すのが一般的です（例: `NEXT_PUBLIC_API_URL=http://localhost:8000` を `.env.local` に記載し、クライアントから `fetch` する）。
+- CORS は `be-app` 側の `CORS_ORIGINS` で調整します（開発時は `http://localhost:3000` が既定）。
 
-App Router のエントリとアプリコードは **`src/`** 以下にまとめています。インポートエイリアスは `src/*`**（`tsconfig.json` の `paths`）です。
+## 技術スタック
+
+- Next.js 16（App Router）
+- React 19
+- TypeScript、Tailwind CSS 4
+
+公式ドキュメント: [Next.js Documentation](https://nextjs.org/docs)
+
+## ディレクトリ構成
+
+App Router とアプリコードは **`src/`** 以下です。パスエイリアス `@/*` は [`tsconfig.json`](tsconfig.json) の `paths` で `src/*` に解決されます。
 
 ```
 apps/fe-app/
 ├── src/
-│   ├── app/                 # App Router（ルート・レイアウト・グローバル CSS）
-│   │   ├── layout.tsx       # ルートレイアウト（フォント・Provider など）
-│   │   ├── page.tsx         # `/`
-│   │   ├── globals.css
-│   │   └── new/
-│   │       └── page.tsx     # `/new`
-│   ├── components/          # 複数ルートで使う UI（必要に応じて ui/ や features/ などに分割）
-│   ├── contexts/            # React Context・Provider（テストや Story からも @/contexts/... で参照）
-│   ├── hooks/               # カスタムフック（状態・副作用。Context の実装と分離しやすい）
-│   ├── constants/           # マジックナンバー・初期データ・文言などの定数
-│   ├── types/               # 共有の型定義
-│   └── lib/                 # Next / React に依存しない純粋な処理（ユーティリティ・ドメインロジックなど）
+│   ├── app/           # ルート・レイアウト・ページ（App Router）
+│   ├── components/    # 複数画面で使う UI
+│   ├── contexts/      # React Context / Provider
+│   ├── hooks/         # カスタムフック
+│   ├── constants/     # 定数
+│   ├── types/         # 共有型
+│   └── lib/           # フレームワークに依存しない処理
+├── public/            # 静的ファイル（必要に応じて作成）
 ├── next.config.ts
 ├── postcss.config.mjs
 ├── tsconfig.json
 └── package.json
 ```
 
-ルートに **`public/`** を置くと、その中身が URL `/` からそのまま配信されます（画像・`favicon.ico` など）。まだ無い場合は必要になったら作成すれば問題ありません。
-
 ### 置き場所の目安
 
 | 置くもの | 置き先の例 |
 |----------|------------|
-| ページ・レイアウト・ルートグループ | `src/app/` |
-| 特定レイアウト専用の小さな UI | `src/app/` 配下の `_components` など（URL に含めたくない場合は `_` プレフィックス） |
-| 複数画面で使うコンポーネント | `src/components/`（大きくなったら `features/<機能名>/` など） |
-| グローバルな Context / Provider | `src/contexts/` |
-| フックに切り出した状態・API 呼び出し | `src/hooks/` |
-| 環境に依存しない定数 | `src/constants/` |
-| 共有型 | `src/types/` |
-| フォーマット・バリデーションなど純関数 | `src/lib/`（必要なら `src/utils/` を別けてもよい） |
+| ページ・レイアウト | `src/app/` |
+| ルート専用の小さな UI | `src/app/` 配下の `_components` など（`_` で URL に含めない） |
+| 共通コンポーネント | `src/components/`（肥大化したら `features/<機能名>/` など） |
+| Context / Provider | `src/contexts/` |
+| 状態・API 呼び出しのフック | `src/hooks/` |
+| 定数・共有型・純関数 | `src/constants/`、`src/types/`、`src/lib/` |
 
-## Learn More
+## ビルド・本番起動
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+# ルートから
+pnpm --filter fe-app build
+pnpm --filter fe-app start
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## デプロイ
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+[Vercel](https://vercel.com/) など Next.js 向けホスティングが利用できます。手順は [Deploying](https://nextjs.org/docs/app/building-your-application/deploying) を参照してください。
