@@ -5,7 +5,14 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "dependency-injector>=4.41.0",
     "fastapi>=0.135.3",
     "pydantic-settings>=2.13.1",
     "uvicorn>=0.44.0",
 ]
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+# `from src.xxx` をプロジェクトルート基準で解決する
+extraPaths = ["."]

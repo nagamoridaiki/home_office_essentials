@@ -1,5 +1,9 @@
+from pathlib import Path
+
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_default_todo_data_path = Path(__file__).resolve().parent.parent / "data" / "todos.json"
 
 
 class Settings(BaseSettings):
@@ -13,6 +17,7 @@ class Settings(BaseSettings):
     api_port: int = 8000
     debug: bool = False
     cors_origins: list[str] = ["http://localhost:3000"]
+    todo_data_path: Path = _default_todo_data_path
 
     @field_validator("cors_origins", mode="before")
     @classmethod
