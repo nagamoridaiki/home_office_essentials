@@ -1,0 +1,8 @@
+{
+  "include": ["apps/be-app"],
+  "exclude": ["**/.venv", "**/node_modules"],
+  "venvPath": "apps/be-app",
+  "venv": ".venv",
+  "extraPaths": ["apps/be-app"],
+  "pythonVersion": "3.12"
+}

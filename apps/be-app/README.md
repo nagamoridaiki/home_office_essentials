@@ -44,6 +44,7 @@ pnpm dev
 | メソッド | パス | 説明 |
 |----------|------|------|
 | GET | `/health` | ヘルスチェック（例: `{"status":"ok"}`） |
+| GET | `/todos` | Todo 一覧（`{"todos": ["...", ...]}`） |
 
 OpenAPI ドキュメント: サーバ起動後 http://localhost:8000/docs
 
@@ -57,20 +58,41 @@ OpenAPI ドキュメント: サーバ起動後 http://localhost:8000/docs
 | `API_PORT` | 既定 `8000`（アプリ設定。uvicorn の CLI と揃える場合は起動オプションも合わせる） |
 | `DEBUG` | FastAPI の `debug` に反映 |
 | `CORS_ORIGINS` | カンマ区切り（例: `http://localhost:3000,http://127.0.0.1:3000`） |
+| `TODO_DATA_PATH` | 任意。Todo 一覧の JSON ファイルパス。未指定時は `data/todos.json`（`be-app` 直下） |
 
-## ソース構成
+## ディレクトリ構成
+
+クリーンアーキテクチャに近い形で、**アプリケーション層**（ユースケースとポート）、**アダプター層**（HTTP・DI・永続化の具象）、**エントリ**（FastAPI）に分けています。依存の向きは概ね `main` → ユースケース → ゲートウェイ抽象 ← 具象ゲートウェイです。
 
 ```
 apps/be-app/
+├── data/
+│   └── todos.json              # Todo 一覧のデータ（JSON 配列 of 文字列）
 ├── src/
-│   ├── main.py      # FastAPI アプリ・CORS・ルート
-│   └── config.py    # pydantic-settings（.env）
+│   ├── main.py                 # FastAPI アプリ・CORS・ルート、DI の wire
+│   ├── config.py               # pydantic-settings（.env）
+│   ├── application/            # アプリケーション層（フレームワーク非依存の意図）
+│   │   ├── gateways/
+│   │   │   └── i_todo_gateway.py   # Todo 用ポート（Protocol）
+│   │   └── usecases/
+│   │       └── todo/
+│   │           └── list_todos.py   # 一覧取得ユースケース
+│   └── adapter/                # アダプター層（外部I/O・DI・Webスキーマ）
+│       ├── di/
+│       │   └── container.py    # dependency_injector（Gateways / UseCases）
+│       ├── gateways/
+│       │   └── todo_file_gateway.py  # JSON ファイルから Todo を読む実装
+│       └── web/
+│           └── schemas/
+│               └── todo.py     # レスポンス用 Pydantic モデル等
 ├── .env.example
 ├── pyproject.toml
 ├── uv.lock
-├── package.json     # pnpm / Turbo 用の dev スクリプト
+├── package.json                # pnpm / Turbo 用の dev スクリプト
 └── README.md
 ```
+
+`__init__.py` は置かず、Python 3 の名前空間パッケージとして `src.application` / `src.adapter` を解決しています。
 
 ## `.python-version` について
 
