@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { TodoProvider } from "@/contexts/todo-context";
+import { QueryClientProviderWrapper } from "@/lib/query-client-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,7 +30,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col font-sans">
-        <TodoProvider>{children}</TodoProvider>
+        <QueryClientProviderWrapper>
+          <TodoProvider>{children}</TodoProvider>
+        </QueryClientProviderWrapper>
       </body>
     </html>
   );
