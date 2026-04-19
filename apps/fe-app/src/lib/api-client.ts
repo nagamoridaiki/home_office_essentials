@@ -9,6 +9,9 @@
  * 【使い方のイメージ】
  * `apiClient<{ todos: string[] }>("/todos")` のように、パスと返ってくる JSON の形（型）を指定して呼びます。
  */
+import { ForbiddenError, UnauthenticatedError } from "@/lib/errors";
+import { SessionManager } from "@/lib/session-manager";
+
 const baseURL =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:8000";
 // NEXT_PUBLIC_ で始まる変数だけ、ブラウザ側のコードに埋め込まれます（.env.local などで設定）
@@ -18,17 +21,33 @@ const baseURL =
  * @param url 先頭に / があるパス（例: "/todos"）。無くても内部で付けます。
  * @param init fetch の第2引数（メソッドやヘッダーなど）。GET だけなら省略することが多いです。
  */
-export async function apiClient<T>(url: string, init?: RequestInit): Promise<T> {
+  export async function apiClient<T>(url: string, init?: RequestInit): Promise<T> {
   // 例: baseURL が http://localhost:8000、url が /todos → 実際には http://localhost:8000/todos へアクセス
   const path = url.startsWith("/") ? url : `/${url}`;
+
+  let token: string | undefined;
+  try {
+    token = SessionManager.getToken();
+  } catch {
+    // 未ログイン状態。認証エラーとして throw し、グローバルハンドラへ
+    throw new UnauthenticatedError("No authentication token");
+  }
+
   const res = await fetch(`${baseURL}${path}`, {
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...init?.headers,
     },
     ...init,
   });
-  // status が 200 番台以外（404 や 500 など）のときは「失敗」とみなし、呼び出し元でキャッチできるよう投げる
+    // status が 200 番台以外（404 や 500 など）のときは「失敗」とみなし、呼び出し元でキャッチできるよう投げる
+  if (res.status === 401) {
+    throw new UnauthenticatedError(`401 Unauthorized: ${path}`);
+  }
+  if (res.status === 403) {
+    throw new ForbiddenError(`403 Forbidden: ${path}`);
+  }
   if (!res.ok) {
     throw new Error(`API error: ${res.status} ${res.statusText}`);
   }
