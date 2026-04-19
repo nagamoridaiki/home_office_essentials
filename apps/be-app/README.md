@@ -44,9 +44,37 @@ pnpm dev
 | メソッド | パス | 説明 |
 |----------|------|------|
 | GET | `/health` | ヘルスチェック（例: `{"status":"ok"}`） |
-| GET | `/todos` | Todo 一覧（`{"todos": ["...", ...]}`） |
+| GET | `/me` | ログイン中ユーザー（要認証。`{"id","email","role"}`。`role` はロール未推論時 `null`） |
+| GET | `/todos` | Todo 一覧（要認証・要ロール。`{"todos": ["...", ...]}`） |
 
 OpenAPI ドキュメント: サーバ起動後 http://localhost:8000/docs
+
+## 認証・認可・ロール（バックエンドの責務）
+
+本リポジトリの be-app は **ローカル開発向けのモック認証**です。本番向けの IdP 連携や JWT 検証は行いません。
+
+### 認証（誰としてリクエストしているか）
+
+- **`private_router` にぶら下がるルート**（`/me`, `/todos`）は、[`src/adapter/web/routers.py`](src/adapter/web/routers.py) の **`auth_dependency`** が先に実行されます。
+- クライアントは **`Authorization: Bearer <トークン>`** を送ります。この **トークン文字列を「外部ユーザー ID」** とみなし、[`data/mock_users.json`](data/mock_users.json) の **`external_user_id`** と **完全一致**でユーザーを解決します（[`MockUserFileGateway`](src/adapter/gateways/mock_user_file_gateway.py)）。
+- 解決に成功すると [`MockAuthUseCase`](src/application/usecases/auth.py) が **`Principal`**（`user_id` は JSON の内部 `id`、`email`、**`roles`**）を組み立て、[`PrincipalContext`](src/common/context.py) に保存します。解決できない場合は **401**（`UnauthenticatedError`）です。
+
+### ロール（何の権限として振る舞うか）
+
+- ロールは **DB ではなく Bearer トークン文字列に対するキーワード部分一致**で推論されます（`student` / `受講者` → `STUDENT` 等）。いずれにも当たらない場合は **`roles` は空配列**です（[`Role`](src/common/roles.py) は `admin` / `teacher` / `student` / `hr` の値を持つ列挙）。
+- **`/me` のレスポンス `role`** は、推論結果の **先頭ロールの value** を返し、**ロールが無いときは `null`** です（暗黙のデフォルトロールは付けません）。
+
+### 認可（そのルートにアクセスしていいか）
+
+- [`require_role`](src/adapter/web/middleware/auth.py) は、**`PrincipalContext` に入っている `principal.roles` のいずれかが、許可リストに含まれるか**を見ます。含まれなければ **403**（`ForbiddenError`）です。
+- 現状 **`/todos`** は **`list(Role)`**（定義済みの全ロール）を許可にしており、**`roles` が空のユーザーは `/me` には届いても `/todos` では拒否**されます。
+
+### 設定・DI との関係（ざっくり）
+
+- **`mock_users_path`**（[`config.py`](src/config.py)）でモックユーザ JSON の場所を指定し、[`main.py`](src/main.py) の **`from_dict`** で DI コンテナの **`Gateways`** に渡し、**`MockUserFileGateway`** がそのパスを開きます。
+- **`MockAuthUseCase`** はコンテナ経由で **`app.state.auth_usecase`** に載せ、上記 **`auth_dependency`** が毎リクエストそれを `execute` します。
+
+フロント側でトークンをどう保持するか・画面でどう扱うかは **fe-app の README** を参照してください。
 
 ## 環境変数
 
@@ -57,8 +85,9 @@ OpenAPI ドキュメント: サーバ起動後 http://localhost:8000/docs
 | `API_HOST` | 既定 `0.0.0.0` |
 | `API_PORT` | 既定 `8000`（アプリ設定。uvicorn の CLI と揃える場合は起動オプションも合わせる） |
 | `DEBUG` | FastAPI の `debug` に反映 |
-| `CORS_ORIGINS` | カンマ区切り（例: `http://localhost:3000,http://127.0.0.1:3000`） |
+| `CORS_ORIGINS` | 許可オリジン。`list[str]` 用のため **JSON 配列**推奨（例: `["http://localhost:3000"]`）。空だと CORS が効かない場合があります |
 | `TODO_DATA_PATH` | 任意。Todo 一覧の JSON ファイルパス。未指定時は `data/todos.json`（`be-app` 直下） |
+| `MOCK_USERS_PATH` | 任意。モックユーザ一覧 JSON。未指定時は `data/mock_users.json` |
 
 ## ディレクトリ構成
 
@@ -67,24 +96,31 @@ OpenAPI ドキュメント: サーバ起動後 http://localhost:8000/docs
 ```
 apps/be-app/
 ├── data/
-│   └── todos.json              # Todo 一覧のデータ（JSON 配列 of 文字列）
+│   ├── todos.json              # Todo 一覧のデータ（JSON 配列 of 文字列）
+│   └── mock_users.json         # モック認証用ユーザー（external_user_id / id / email）
 ├── src/
-│   ├── main.py                 # FastAPI アプリ・CORS・ルート、DI の wire
+│   ├── main.py                 # FastAPI アプリ・CORS・ルート、DI の wire・app.state.auth
 │   ├── config.py               # pydantic-settings（.env）
+│   ├── common/                 # ロール・Principal・共通エラー
+│   ├── enterprise/entities/    # User 等のドメインエンティティ
 │   ├── application/            # アプリケーション層（フレームワーク非依存の意図）
 │   │   ├── gateways/
-│   │   │   └── i_todo_gateway.py   # Todo 用ポート（Protocol）
+│   │   │   ├── i_todo_gateway.py
+│   │   │   └── i_user_gateway.py   # モック認証用ユーザー解決ポート
 │   │   └── usecases/
+│   │       ├── auth.py             # MockAuthUseCase
 │   │       └── todo/
 │   │           └── list_todos.py   # 一覧取得ユースケース
 │   └── adapter/                # アダプター層（外部I/O・DI・Webスキーマ）
 │       ├── di/
 │       │   └── container.py    # dependency_injector（Gateways / UseCases）
 │       ├── gateways/
-│       │   └── todo_file_gateway.py  # JSON ファイルから Todo を読む実装
+│       │   ├── todo_file_gateway.py
+│       │   └── mock_user_file_gateway.py
 │       └── web/
-│           └── schemas/
-│               └── todo.py     # レスポンス用 Pydantic モデル等
+│           ├── routers.py      # auth_dependency・public/private ルータ
+│           ├── middleware/
+│           └── schemas/          # todo / user 等のレスポンスモデル
 ├── .env.example
 ├── pyproject.toml
 ├── uv.lock
