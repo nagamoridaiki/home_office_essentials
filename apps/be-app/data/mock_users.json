@@ -1,0 +1,27 @@
+[
+  {
+    "external_user_id": "teacher-dev-1",
+    "id": "550e8400-e29b-41d4-a716-446655440001",
+    "email": "teacher1@local.example.com"
+  },
+  {
+    "external_user_id": "student-dev-1",
+    "id": "550e8400-e29b-41d4-a716-446655440002",
+    "email": "student1@local.example.com"
+  },
+  {
+    "external_user_id": "hr-contact-1",
+    "id": "550e8400-e29b-41d4-a716-446655440003",
+    "email": "hr1@local.example.com"
+  },
+  {
+    "external_user_id": "運営-admin-1",
+    "id": "550e8400-e29b-41d4-a716-446655440004",
+    "email": "admin1@local.example.com"
+  },
+  {
+    "external_user_id": "plain-dev-1",
+    "id": "550e8400-e29b-41d4-a716-446655440005",
+    "email": "plain1@local.example.com"
+  }
+]
