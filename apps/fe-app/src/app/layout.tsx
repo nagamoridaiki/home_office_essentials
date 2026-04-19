@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { TodoProvider } from "@/contexts/todo-context";
+import { SessionProvider } from "@/contexts/session-context";
+import { AppShell } from "@/components/app-shell";
 import { QueryClientProviderWrapper } from "@/lib/query-client-provider";
 
 const geistSans = Geist({
@@ -31,7 +33,11 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col font-sans">
         <QueryClientProviderWrapper>
-          <TodoProvider>{children}</TodoProvider>
+          <SessionProvider>
+            <TodoProvider>
+              <AppShell>{children}</AppShell>
+            </TodoProvider>
+          </SessionProvider>
         </QueryClientProviderWrapper>
       </body>
     </html>
