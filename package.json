@@ -1,5 +1,5 @@
 {
-  "name": "modern-home-office-essentials",
+  "name": "a3-login-test",
   "private": true,
   "scripts": {
     "build": "turbo run build",
