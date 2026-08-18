@@ -1,4 +1,4 @@
-# home-office-essentials
+# a3_login_test
 
 ## 概要
 
@@ -13,7 +13,7 @@
 リポジトリの**ルートディレクトリ**（`package.json` がある場所）で作業します。ターミナルを開き、クローン済みのフォルダに移動してください。
 
 ```bash
-cd /path/to/home_office_essentials
+cd /path/to/a3_login_test
 ```
 
 （`/path/to/...` は自分の PC 上の実際のパスに読み替えてください。）
